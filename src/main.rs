@@ -7,7 +7,6 @@ use regex::Regex;
 use std::fmt;
 use std::io::Cursor;
 use std::net::{Ipv4Addr, SocketAddrV4};
-use std::process;
 use std::process::Command;
 use std::str::FromStr;
 use std::thread;
@@ -33,12 +32,6 @@ fn main() {
 
     if let Some(addr) = config.server_addr {
         single_server(addr);
-    } else if config.all {
-        let mut servers = Vec::new();
-        for server in FRAGSHACK_SERVERS.iter() {
-            servers.push(SocketAddrV4::from_str(server).unwrap());
-        }
-        all(&servers);
     } else if config.show {
         let mut servers = Vec::new();
         for server in FRAGSHACK_SERVERS.iter() {
@@ -46,8 +39,11 @@ fn main() {
         }
         show(&servers);
     } else {
-        eprintln!("Need more information!");
-        process::exit(1);
+        let mut servers = Vec::new();
+        for server in FRAGSHACK_SERVERS.iter() {
+            servers.push(SocketAddrV4::from_str(server).unwrap());
+        }
+        all(&servers);
     }
 }
 
@@ -250,10 +246,6 @@ impl ServerResponse {
 
 #[derive(StructOpt)]
 struct Config {
-    #[structopt(short = "a")]
-    /// Find best server
-    all: bool,
-
     #[structopt(short = "s")]
     /// Query and list
     show: bool,
