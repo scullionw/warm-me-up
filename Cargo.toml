@@ -1,5 +1,5 @@
 [package]
-name = "warmup"
+name = "warm-me-up"
 version = "0.1.0"
 authors = ["William Scullion <williamscullion@gmail.com>"]
 edition = "2018"

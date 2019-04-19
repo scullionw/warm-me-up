@@ -21,6 +21,8 @@ const FFA7: &str = "104.153.107.122:27015";
 const FFA8: &str = "104.153.107.121:27015";
 const FFA9: &str = "104.153.107.120:27015";
 
+const BIND_ADDR: &str = "0.0.0.0:25111";
+
 const FRAGSHACK_SERVERS: [&str; 7] = [FFA1, FFA2, FFA3, FFA4, FFA7, FFA8, FFA9];
 
 lazy_static! {
@@ -33,10 +35,7 @@ fn main() {
     if let Some(addr) = config.server_addr {
         single_server(addr);
     } else if config.show {
-        let mut servers = Vec::new();
-        for server in FRAGSHACK_SERVERS.iter() {
-            servers.push(SocketAddrV4::from_str(server).unwrap());
-        }
+        let servers = FRAGSHACK_SERVERS.iter().map(|&x| x.parse().unwrap()).collect::<Vec<_>>();
         show(&servers);
     } else {
         let mut servers = Vec::new();
