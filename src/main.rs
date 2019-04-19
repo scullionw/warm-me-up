@@ -8,7 +8,6 @@ use std::fmt;
 use std::io::Cursor;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::process::Command;
-use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -34,26 +33,29 @@ fn main() {
 
     if let Some(addr) = config.server_addr {
         single_server(addr);
-    } else if config.show {
-        let servers = FRAGSHACK_SERVERS.iter().map(|&x| x.parse().unwrap()).collect::<Vec<_>>();
-        show(&servers);
     } else {
-        let mut servers = Vec::new();
-        for server in FRAGSHACK_SERVERS.iter() {
-            servers.push(SocketAddrV4::from_str(server).unwrap());
+
+        let servers = FRAGSHACK_SERVERS
+            .iter()
+            .map(|&x| x.parse().unwrap())
+            .collect::<Vec<_>>();
+
+        if config.show {
+            show(&servers);
+        } else {
+            all(&servers);
         }
-        all(&servers);
     }
 }
 
 fn show(servers: &[SocketAddrV4]) {
-    let mut queried_servers = Vec::new();
-    for server in servers {
-        queried_servers.push(QueriedServer::from_addr(*server));
-    }
+
+    let mut queried_servers = servers
+        .iter()
+        .map(|s| QueriedServer::from_addr(*s))
+        .collect::<Vec<_>>();
 
     queried_servers.sort_by_key(|q| q.latency);
-
     queried_servers.iter().for_each(|q| println!("{}", q));
 }
 
@@ -76,19 +78,19 @@ fn all(servers: &[SocketAddrV4]) {
     let mut connected = false;
 
     while !connected {
-        let mut queried_servers = Vec::new();
-        for server in servers {
-            queried_servers.push(QueriedServer::from_addr(*server));
-        }
+        
+        let mut queried_servers = servers
+            .iter()
+            .map(|s| QueriedServer::from_addr(*s))
+            .collect::<Vec<_>>();
 
         queried_servers.sort_by_key(|q| q.latency);
-
         queried_servers.iter().for_each(|q| println!("{}", q));
 
-        for q in queried_servers {
-            if q.should_join() {
-                println!("Joining: {}", q);
-                q.connect().unwrap();
+        for queried_server in queried_servers {
+            if queried_server.should_join() {
+                println!("Joining: {}", queried_server);
+                queried_server.connect().unwrap();
                 connected = true;
                 break;
             }
@@ -133,7 +135,7 @@ impl QueriedServer {
         let output = Command::new("cmd")
             .args(&["/C", &full_command])
             .output()
-            .expect("failed to execute process");
+            .expect("Failed to execute game launch command");
 
         if output.status.success() {
             Ok(())
@@ -141,7 +143,7 @@ impl QueriedServer {
             println!("status: {}", output.status);
             println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
             eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
-            Err("connect to server failed")
+            Err("Connection to CS server failed")
         }
     }
 
@@ -156,14 +158,16 @@ fn server_query(server: SocketAddrV4) -> ServerResponse {
     let query_data =
         hex!("ff ff ff ff 54 53 6f 75 72 63 65 20 45 6e 67 69 6e 65 20 51 75 65 72 79 00");
 
-    let socket = UdpSocket::bind("0.0.0.0:25111").expect("Could not bind address");
+    let socket = UdpSocket::bind(BIND_ADDR).expect("Could not bind address");
 
     socket
         .send_to(&query_data, server)
         .expect("couldn't send data");
 
     let mut buf = [0; 1024];
-    let (amt, _) = socket.recv_from(&mut buf).expect("Error receiving data");
+    let (amt, _) = socket
+        .recv_from(&mut buf)
+        .expect("Error receiving from valve");
 
     ServerResponse::from_data(&buf[..amt])
 }
@@ -217,28 +221,17 @@ impl ServerResponse {
     fn from_data(data: &[u8]) -> ServerResponse {
         let mut rdr = Cursor::new(data);
 
-        let header = rdr.read_u8().unwrap();
-        let protocol = rdr.read_u8().unwrap();
-        let name = ServerResponse::variable_length_string(&mut rdr);
-        let map = ServerResponse::variable_length_string(&mut rdr);
-        let folder = ServerResponse::variable_length_string(&mut rdr);
-        let game = ServerResponse::variable_length_string(&mut rdr);
-        let id = rdr.read_u16::<LittleEndian>().unwrap();
-        let players = rdr.read_u8().unwrap();
-        let max_players = rdr.read_u8().unwrap();
-        let bots = rdr.read_u8().unwrap();
-
         ServerResponse {
-            header,
-            protocol,
-            name,
-            map,
-            folder,
-            game,
-            id,
-            players,
-            max_players,
-            bots,
+            header: rdr.read_u8().unwrap(),
+            protocol: rdr.read_u8().unwrap(),
+            name: ServerResponse::variable_length_string(&mut rdr),
+            map: ServerResponse::variable_length_string(&mut rdr),
+            folder: ServerResponse::variable_length_string(&mut rdr),
+            game: ServerResponse::variable_length_string(&mut rdr),
+            id: rdr.read_u16::<LittleEndian>().unwrap(),
+            players: rdr.read_u8().unwrap(),
+            max_players: rdr.read_u8().unwrap(),
+            bots: rdr.read_u8().unwrap(),
         }
     }
 }
