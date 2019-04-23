@@ -19,11 +19,8 @@ const FFA4: &str = "74.91.114.102:27015";
 const FFA7: &str = "104.153.107.122:27015";
 const FFA8: &str = "104.153.107.121:27015";
 const FFA9: &str = "104.153.107.120:27015";
-
 const BIND_ADDR: &str = "0.0.0.0:25111";
-
 const POLL_TIME: u64 = 200;
-
 const FRAGSHACK_SERVERS: [&str; 7] = [FFA1, FFA2, FFA3, FFA4, FFA7, FFA8, FFA9];
 
 lazy_static! {
@@ -72,7 +69,7 @@ fn single_server(addr: SocketAddrV4) {
             queried.connect().unwrap();
             connected = true;
         }
-        thread::sleep(Duration::from_secs(POLL_TIME));
+        thread::sleep(Duration::from_millis(POLL_TIME));
     }
 }
 
@@ -97,7 +94,7 @@ fn all(servers: &[SocketAddrV4]) {
                 break;
             }
         }
-        thread::sleep(Duration::from_secs(POLL_TIME));
+        thread::sleep(Duration::from_millis(POLL_TIME));
     }
 }
 
