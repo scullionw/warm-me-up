@@ -33,7 +33,6 @@ fn main() {
     if let Some(addr) = config.server_addr {
         single_server(addr);
     } else {
-
         let servers = FRAGSHACK_SERVERS
             .iter()
             .map(|&x| x.parse().unwrap())
@@ -48,7 +47,6 @@ fn main() {
 }
 
 fn show(servers: &[SocketAddrV4]) {
-
     let mut queried_servers = servers
         .iter()
         .map(|s| QueriedServer::from_addr(*s))
@@ -77,7 +75,6 @@ fn all(servers: &[SocketAddrV4]) {
     let mut connected = false;
 
     while !connected {
-        
         let mut queried_servers = servers
             .iter()
             .map(|s| QueriedServer::from_addr(*s))
@@ -149,7 +146,7 @@ impl QueriedServer {
     fn should_join(&self) -> bool {
         let real_players = self.info.players - self.info.bots;
         let available_slots = self.info.max_players - real_players;
-        available_slots > 0 && real_players > 5
+        available_slots > 0 && real_players > 8
     }
 }
 
