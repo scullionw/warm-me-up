@@ -146,7 +146,7 @@ impl QueriedServer {
     fn should_join(&self) -> bool {
         let real_players = self.info.players - self.info.bots;
         let available_slots = self.info.max_players - real_players;
-        available_slots > 0 && real_players > 8
+        available_slots > 0 && real_players > 6 && self.latency < 50
     }
 }
 
